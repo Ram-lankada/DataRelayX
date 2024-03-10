@@ -308,7 +308,7 @@ const App = () => {
       const decodedData = decodeMetaData(parsedMetaData, Number(timestamp));
       setDataList((prevDataList) => [...prevDataList, decodedData]);
       // setDataList([decodedData]);
-      }, 10000);
+      }, 3000);
 
       // }
 
@@ -574,11 +574,13 @@ const App = () => {
 
                     <div className="tail flex gap-1">
 
-                      <button>
-                        <img src={download} alt="download" onClick={handleDownloadClick} />
+                      <button onClick={handleDownloadClick} >
+                        {/* <img src={download} alt="download" onClick={handleDownloadClick} /> */}
+                        <i className="fa fa-download" aria-hidden="true"></i>
                       </button>
-                      <button>
-                        <img src={view} alt="view" onClick={() => handleDataClick(index)} />
+                      <button onClick={() => handleDataClick(index)} >
+                        {/* <img src={view} alt="view" onClick={() => handleDataClick(index)} /> */}
+                        <i className="fa-solid fa-eye"></i>
                       </button>
                     </div>
                   </div>
