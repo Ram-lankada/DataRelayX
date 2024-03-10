@@ -7,7 +7,7 @@ import Home from './Pages/Home';
 const App: React.FC = () => {
   return (
     <BrowserRouter>
-      <Navbar />
+      {/* <Navbar /> */}
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/about" element={<About />} />
