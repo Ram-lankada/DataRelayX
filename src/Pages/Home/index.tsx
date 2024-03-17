@@ -14,7 +14,12 @@ import flight from '../../static/flight.png';
 import download from '../../static/download.png';
 import view from '../../static/view.png';
 import Map from '../../Components/map.jsx';
+import TextBox1 from '../../Components/Textbox/tb1.tsx';
+// import TextBox2 from '../../Components/Textbox/tb2.tsx';
 import ReactDOM from 'react-dom';
+import * as nacl from 'tweetnacl';
+import { Buffer } from 'buffer';
+
 // import './index.css';
 
 const NAME = "DataRelayX";
@@ -54,6 +59,7 @@ const App = () => {
   const [dataList, setDataList] = useState<DecodedMetaData[]>([]);
   const [period, setPeriod] = useState<Period>();
   const [selectedDataIndex, setSelectedDataIndex] = useState(null);
+  const [searchQuery, setSearchQuery] = useState<string>('');
   // const [balance, setBalance] = useState<BN>();
 
   const setup = async () => {
@@ -92,7 +98,13 @@ const App = () => {
 
   }
 
+  const handleSearchInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
+    setSearchQuery(event.target.value);
+  };
 
+  const filteredDataList: DecodedMetaData[] = searchQuery
+    ? dataList.filter((data) => data.droneId.toLowerCase().includes(searchQuery.toLowerCase()))
+    : dataList;
 
   // const handleBurn = async () => {
   //   if (!api || !selectedAccount)
@@ -112,7 +124,54 @@ const App = () => {
   // }
 
 
-  // Google maps service
+  // Encryption - Decryption 
+  // Function to generate a random 32-byte secret key
+  function generateSecretKey(): Uint8Array {
+    return nacl.randomBytes(nacl.secretbox.keyLength);
+  }
+
+  // Function to generate a random 12-byte nonce
+  function generateNonce(): Uint8Array {
+    return nacl.randomBytes(nacl.secretbox.nonceLength);
+  }
+
+  // Function to encrypt plaintext using ChaCha20-Poly1305
+  function encrypt(plaintext: string, key: Uint8Array, nonce: Uint8Array): Uint8Array {
+    const encodedPlaintext = Buffer.from(plaintext, 'utf8');
+    const ciphertext = nacl.secretbox(encodedPlaintext, nonce, key);
+    return ciphertext;
+  }
+
+  // Function to decrypt ciphertext using ChaCha20-Poly1305
+  function decrypt(ciphertext: Uint8Array, key: Uint8Array, nonce: Uint8Array): string | null {
+    try {
+      const decrypted = nacl.secretbox.open(ciphertext, nonce, key);
+      if (!decrypted) {
+        throw new Error('Failed to decrypt ciphertext');
+      }
+      return Buffer.from(decrypted).toString('utf8');
+    } catch (error) {
+      console.error('Decryption error:', error);
+      return null;
+    }
+  }
+
+  function decryptFromString(ciphertextString: string, key: Uint8Array, nonce: Uint8Array): string | null {
+    // Convert the base64-encoded ciphertext string back to a Uint8Array
+    const ciphertext = Buffer.from(ciphertextString, 'base64');
+
+    try {
+      const decrypted = nacl.secretbox.open(ciphertext, nonce, key);
+      if (!decrypted) {
+        throw new Error('Failed to decrypt ciphertext');
+      }
+      return Buffer.from(decrypted).toString('utf8');
+    } catch (error) {
+      console.error('Decryption error:', error);
+      return null;
+    }
+  }
+
 
   const decodeId = (seed: string): number => {
     const seedChars = seed.split("");
@@ -299,15 +358,19 @@ const App = () => {
 
       setTimeout(async () => {
 
-      const timestamp = (await api.query.timestamp.now()).toPrimitive();
-      const metaData = (await api.query.currencies.currentTimePeriod()).toPrimitive() as string;
-      const parsedMetaData = metaData.toUpperCase() as Period;
+        const timestamp = (await api.query.timestamp.now()).toPrimitive();
+        const metaData = (await api.query.currencies.currentTimePeriod()).toPrimitive() as string;
+        let parsedMetaData = metaData.toUpperCase() as Period;
 
-      setPeriod(parsedMetaData);
+        // setPeriod(parsedMetaData);
 
-      const decodedData = decodeMetaData(parsedMetaData, Number(timestamp));
-      setDataList((prevDataList) => [...prevDataList, decodedData]);
-      // setDataList([decodedData]);
+        const secretKey = generateSecretKey();
+        const nonce = generateNonce();
+        parsedMetaData = decryptFromString(parsedMetaData, secretKey, nonce);
+
+        const decodedData = decodeMetaData(parsedMetaData, Number(timestamp));
+        setDataList((prevDataList) => [...prevDataList, decodedData]);
+        // setDataList([decodedData]);
       }, 3000);
 
       // }
@@ -316,9 +379,9 @@ const App = () => {
 
   });
 
-  let location: Number[] = [
-    72.943, 24.2621
-  ]
+  // let location: Number[] = [
+  //   72.943, 24.2621
+  // ]
   function handleDataClick(index: number): void {
     setSelectedDataIndex(index);
 
@@ -335,7 +398,7 @@ const App = () => {
 
       const a = document.createElement('a');
       a.href = url;
-      a.download = `data_${selectedDataIndex}.json`;
+      a.download = `Drone_data_${selectedDataIndex}.json`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -358,12 +421,11 @@ const App = () => {
 
   return (
     <div>
-
-      <nav className="bg-black border-gray-200 dark:bg-gray-900">
+      <nav className="bg-black border-gray-200 dark:bg-gray-900 sticky">
         <div className="w-full flex flex-wrap items-center justify-between p-4">
-          <a href="https://flowbite.com/" className="flex items-center space-x-3 rtl:space-x-reverse">
-            <img src={logo} className="h-8" alt="Flowbite Logo" />
-            <span className="self-center font-semibold whitespace-nowrap text-white text-base dark:text-white"> Data Relay X</span>
+          <a href="#" className="flex items-center space-x-4 rtl:space-x-reverse">
+            <img src={logo} className="h-10" alt="Data relay X Logo" />
+            <span className="self-center font-semibold whitespace-nowrap text-white text-lg dark:text-white"> Data Relay X</span>
           </a>
           <div className="flex items-center md:order-2 space-x-3 md:space-x-0 rtl:space-x-reverse">
 
@@ -398,11 +460,11 @@ const App = () => {
             {
               accounts.length > 0 && !selectedAccount ?
                 (
-                  <div className='z-10 bg-white divide-y divide-gray-100 rounded-lg shadow w-44 dark:bg-gray-700'>
-                    <select className='py-2 text-sm text-gray-700 dark:text-gray-200' onChange={handleAccountSelection} >
+                  <div className='z-10 bg-white divide-y divide-gray-100 rounded-lg shadow  dark:bg-gray-700'>
+                    <select className='py-2 text-sm text-gray-700 dark:text-gray-200 w-44 rounded-lg ' onChange={handleAccountSelection} >
                       <option className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white" value="" disabled selected hidden > Choose your account </option>
                       {accounts.map((account) => (
-                        <option className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white" value={account.address} > {account.meta.name} : {account.address} </option>
+                        <option className="block px-4 py-2 hover:bg-gray-100 dark:hover:bg-gray-600 dark:hover:text-white " value={account.address} > {account.meta.name} : {account.address} </option>
                       ))}
                     </select>
                   </div>
@@ -556,31 +618,40 @@ const App = () => {
 
       {selectedAccount ?
         <div className="flex flex-row">
-          <div className="flex flex-row">
-            <div className='w-[50%]' >
-              <div className="search">
+          <div className="flex h-[101vh] ">
+            <div className='flex flex-col bg-[#201F2D] p-3 gap-3 w-[25vw]' >
 
-              </div>
+              {/* <input type='text' className="search bg-[#302D38] rounded-2xl h-[7vh] text-white  " placeholder='Enter Drone Id' /> */}
 
-              <div className="list h-[100vh] overflow-scroll cursor-pointer  gap-2">
-                {dataList.map((data, index) => (
-                  <div key={index} className='flex flex-row justify-between border-black' onClick={() => handleDataClick(index)} >
+              <input
+                type="text"
+                className="search bg-[#302D38] rounded-2xl h-[7vh] text-white"
+                placeholder="Enter Drone Id"
+                value={searchQuery}
+                onChange={handleSearchInputChange}
+              />
 
-                    <div className="head flex">
+              <div className="list h-[90vh] overflow-scroll cursor-pointer gap-2 bg-[#302D38] rounded-2xl p-2">
+                {/* {dataList.map((data, index) => ( */}
+                {filteredDataList.map((data, index) => (
+                  <div key={index}
+                    className={`flex flex-row justify-between items-center content-center border-black w-[330px] h-[60px] p-2.5 rounded-2xl ${selectedDataIndex === index ? 'bg-[#201F2D]' : ''
+                      }`}
+                  >
+                    <div className="head flex gap-6 items-center truncate text-white" onClick={() => handleDataClick(index)}>
+                      <img src={drone} className='w-[45px] h-[45px]' alt="drone" />
 
-                      <img src={drone} alt="drone" />   :  {data.droneId}
-
+                      <p className='w-[135px] truncate' >{data.droneId}</p>
                     </div>
 
-                    <div className="tail flex gap-1">
-
+                    <div className="tail flex gap-3 items-center">
                       <button onClick={handleDownloadClick} >
-                        {/* <img src={download} alt="download" onClick={handleDownloadClick} /> */}
-                        <i className="fa fa-download" aria-hidden="true"></i>
+                        <img src={download} alt="download" className='w-[25px] h-[25px]' />
+                        {/* <i className="fa fa-download" aria-hidden="true"></i> */}
                       </button>
                       <button onClick={() => handleDataClick(index)} >
-                        {/* <img src={view} alt="view" onClick={() => handleDataClick(index)} /> */}
-                        <i className="fa-solid fa-eye"></i>
+                        <img src={view} alt="view" onClick={() => handleDataClick(index)} className='w-[25px] h-[25px]' />
+                        {/* <i className="fa-solid fa-eye"></i> */}
                       </button>
                     </div>
                   </div>
@@ -590,32 +661,78 @@ const App = () => {
             </div>
 
             {selectedDataIndex !== null && (
-              <div className='info w-[50%] flex flex-col gap-2' key={selectedDataIndex}>
 
-                <div className="id">
-                  <p>Drone ID: {dataList[selectedDataIndex].droneId}</p>
+              <div className='info flex flex-col p-3 gap-2 bg-[#201F2D] text-white w-[20vw] transform transition-all duration-1000 ease-out  ' key={selectedDataIndex}>
+
+                <div className="id bg-[#302D38] rounded-2xl h-[7vh] flex justify-between p-2.5">
+
+                  <div className='flex gap-4 items-center truncate' >
+                    <i className="fa-solid fa-angle-right"></i>
+                    <p className='w-[200px] truncate' >{dataList[selectedDataIndex].droneId}</p>
+                  </div>
+
+                  <button className='text-2xl' onClick={() => { setSelectedDataIndex(null) }} ><i className="fa-regular fa-circle-xmark"></i></button>
                 </div>
 
-                <div className="location">
-                  <button className='text-2xl' onClick={() => { setSelectedDataIndex(null) }} >close</button>
 
-                  <p>Location: {`Latitude: ${dataList[selectedDataIndex].location.latitude}, Longitude: ${dataList[selectedDataIndex].location.longitude}`}</p>
+
+                <div className="location bg-[#302D38] rounded-2xl h-[30vh] flex flex-col gap-4 p-5 ">
+
+                  <div className="area flex gap-5 items-center">
+                    <i className="fa-solid fa-location-dot"></i>
+                    <div>
+                      <p>Area 51</p>
+                      <p>GVPCOE</p>
+                    </div>
+                  </div>
+
+                  <div className="flex justify-between">
+                    <TextBox1 head="lg" heading="Latitude" subheading={`${dataList[selectedDataIndex].location.latitude}  `} />
+                    <TextBox1 head="lg" heading="Longitude" subheading={`${dataList[selectedDataIndex].location.longitude} `} />
+                  </div>
+
+                  <div className="flex justify-between">
+                    <TextBox1 head="lg" heading="Cluster Head" subheading="DRN59641376953" />
+                    {/* <TextBox1 heading="Longitude" subheading={`${dataList[selectedDataIndex].location.longitude} `} /> */}
+                  </div>
+
                 </div>
 
-                <div className="metaData">
-                  <p>Transaction ID: {dataList[selectedDataIndex].transactionId}</p>
 
-                  <p>Transaction Type: {dataList[selectedDataIndex].transactionType}</p>
-                  <p>Data Category: {dataList[selectedDataIndex].dataCategory}</p>
-                  <p>Data Format: {dataList[selectedDataIndex].dataFormat}</p>
-                  <p>Data Size: {dataList[selectedDataIndex].dataSize}</p>
-                  <p>Sender: {dataList[selectedDataIndex].sender}</p>
-                  <p>Receiver: {dataList[selectedDataIndex].receiver}</p>
-                  <p>Additional Info: </p>
-                  <ul>
-                    <li>Temperature: {dataList[selectedDataIndex].additionalInfo.temperature} °F</li>
-                    <li>Humidity: {dataList[selectedDataIndex].additionalInfo.humidity} g.m-3</li>
-                  </ul>
+
+                <div className="metaData bg-[#302D38] rounded-2xl h-[60vh] flex flex-col gap-4 p-5 ">
+
+                  <div className="flex flex-col gap-2">
+                    <h1>Transaction meta data</h1>
+                    <div className="flex justify-between">
+                      <TextBox1 head="sm" heading="Sender" subheading={`${dataList[selectedDataIndex].sender}  `} />
+                      <TextBox1 head="sm" heading="Receiver" subheading={`${dataList[selectedDataIndex].receiver} `} />
+                    </div>
+
+                    <TextBox1 head="sm" heading="Transaction Id" subheading={`${dataList[selectedDataIndex].transactionId} `} />
+                    <TextBox1 head="sm" heading="Transaction type" subheading={`${dataList[selectedDataIndex].transactionType} `} />
+
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <h1>Transmission meta data</h1>
+                    <div className="flex justify-between">
+                      <TextBox1 head="sm" heading="Modality" subheading={`${dataList[selectedDataIndex].dataCategory}  `} />
+                      <TextBox1 head="sm" heading="Data format" subheading={`${dataList[selectedDataIndex].dataFormat} `} />
+                    </div>
+
+                    <TextBox1 head="sm" heading="Data size" subheading={`${dataList[selectedDataIndex].dataSize} `} />
+
+                  </div>
+
+                  <div className="flex flex-col gap-2">
+                    <h1>Sensor data</h1>
+                    <div className="flex justify-between">
+                      <TextBox1 head="sm" heading="Modality" subheading={`${dataList[selectedDataIndex].additionalInfo.temperature}  `} />
+                      <TextBox1 head="sm" heading="Data format" subheading={`${dataList[selectedDataIndex].additionalInfo.humidity} `} />
+                    </div>
+                  </div>
+
                 </div>
 
               </div>
@@ -624,11 +741,11 @@ const App = () => {
 
           </div>
 
-          <div className={`w-${selectedDataIndex !== null ? ['50%'] : ['75%']}`}>
-            <Map
+          <div className={`w-${selectedDataIndex !== null ? ['50%'] : ['65%']}`}>
+            {/* <Map
               latitude={selectedDataIndex !== null ? dataList[selectedDataIndex].location.latitude : 7.2905715}
               longitude={selectedDataIndex !== null ? dataList[selectedDataIndex].location.longitude : 80.6337262}
-            />
+            /> */}
           </div>
 
         </div> : null
@@ -677,7 +794,7 @@ const App = () => {
       </div> */}
 
 
-
+      <script src="https://cdnjs.cloudflare.com/ajax/libs/flowbite/2.3.0/flowbite.min.js"></script>
     </div>
 
   );
