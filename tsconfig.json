@@ -20,6 +20,6 @@
     "noUnusedParameters": true,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "src/Utils/mini-chacha20-poly1305.ts"],
   "references": [{ "path": "./tsconfig.node.json" }]
 }

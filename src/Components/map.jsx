@@ -38,7 +38,7 @@ const Map = ( {latitude , longitude} ) => {
   };
 
 
-  console.log("location : " , center2) ; 
+  // console.log("location : " , center2) ; 
   return (
     <div>
       <GoogleMap

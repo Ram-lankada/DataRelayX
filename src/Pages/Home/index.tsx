@@ -1,33 +1,42 @@
 import { WsProvider, ApiPromise } from '@polkadot/api';
-import { web3Accounts, web3Enable, web3FromAddress } from '@polkadot/extension-dapp';
+
+import { web3Accounts, web3Enable } from '@polkadot/extension-dapp';
 import { InjectedAccountWithMeta } from '@polkadot/extension-inject/types';
-// import { randomBytes } from "crypto"; // Import for random string generation
-// import { random as seededRandom } from 'seedrandom';
-// declare module 'seedrandom';
-import * as CryptoJS from 'crypto-js';
-import BN from 'bn.js';
+
+// React hooks 
 import { ChangeEvent, useEffect, useState } from 'react';
+import * as CryptoJS from 'crypto-js';
+import Cookies from 'js-cookie';
+import BN from 'bn.js';
+
 import profile from '../../static/profile.png';
 import logo from '../../static/logo.png';
 import drone from '../../static/drone.png';
 import flight from '../../static/flight.png';
+import jet from '../../static/jet.png';
 import download from '../../static/download.png';
 import view from '../../static/view.png';
+
 import Map from '../../Components/map.jsx';
 import TextBox1 from '../../Components/Textbox/tb1.tsx';
+
+// import { Cookie } from 'js-cookie';
 // import TextBox2 from '../../Components/Textbox/tb2.tsx';
-import ReactDOM from 'react-dom';
-import * as nacl from 'tweetnacl';
-import { Buffer } from 'buffer';
-
+// import ReactDOM from 'react-dom';
+// import * as nacl from 'tweetnacl';
+// import { Buffer } from 'buffer';
+// import 'flowbite';
 // import './index.css';
+// import { randomBytes } from "crypto"; // Import for random string generation
+// import { random as seededRandom } from 'seedrandom';
+// declare module 'seedrandom';
 
-const NAME = "DataRelayX";
 type Period = "MORNING" | "NIGHT" | "MIDONE" | "MIDTWO";
 const AMOUNT = new BN(10).mul(new BN(10).pow(new BN(12)));
 const length = 10;
 
 
+const NAME = "DataRelayX";
 interface Location {
   latitude: number;
   longitude: number;
@@ -60,13 +69,43 @@ const App = () => {
   const [period, setPeriod] = useState<Period>();
   const [selectedDataIndex, setSelectedDataIndex] = useState(null);
   const [searchQuery, setSearchQuery] = useState<string>('');
+  const [isOpen, setOpen] = useState(false);
+
+  // const [vehicle, setVehicle] = useState<number>('0');
   // const [balance, setBalance] = useState<BN>();
+  // var vehicle = 0;
+
+  // let vehicleImageSrc: string | undefined;
+  // if (vehicle === 0) {
+  //   vehicleImageSrc = drone;
+  // } else if (vehicle === 2) {
+  //   vehicleImageSrc = flight;
+  // } else if (vehicle === 1) {
+  //   vehicleImageSrc = jet;
+  // }
+
+
+  const handleDropDown = () => {
+    setOpen(!isOpen);
+  };
+
+  function handleDataClick(index: number): void {
+    setSelectedDataIndex(index);
+
+  }
+
+  // sync call
+  // async - await call
+
 
   const setup = async () => {
     const wsProvider = new WsProvider("wss://ws.gm.bldnodes.org/");
     const api = await ApiPromise.create({ provider: wsProvider });
     setApi(api);
   };
+
+  // 5 - async 
+  // sync - async 
 
   // Handling wallet authentication
   const handleConnect = async () => {
@@ -96,8 +135,12 @@ const App = () => {
 
     setSelectedAccount(account);
 
+    Cookies.set("wallet", JSON.stringify(account));
+
   }
 
+
+  // Searching logic 
   const handleSearchInputChange = (event: React.ChangeEvent<HTMLInputElement>) => {
     setSearchQuery(event.target.value);
   };
@@ -106,73 +149,8 @@ const App = () => {
     ? dataList.filter((data) => data.droneId.toLowerCase().includes(searchQuery.toLowerCase()))
     : dataList;
 
-  // const handleBurn = async () => {
-  //   if (!api || !selectedAccount)
-  //     return;
 
-  //   const injector = await web3FromAddress(selectedAccount.address);
-
-  //   const response = await api.tx.currencies.burnFren(AMOUNT).signAndSend(selectedAccount.address, {
-  //     signer: injector.signer
-  //   });
-
-  //   if (response)
-  //     console.log("Burn response : ", response);
-  //   else
-  //     console.log("No Frens burnt ");
-
-  // }
-
-
-  // Encryption - Decryption 
-  // Function to generate a random 32-byte secret key
-  function generateSecretKey(): Uint8Array {
-    return nacl.randomBytes(nacl.secretbox.keyLength);
-  }
-
-  // Function to generate a random 12-byte nonce
-  function generateNonce(): Uint8Array {
-    return nacl.randomBytes(nacl.secretbox.nonceLength);
-  }
-
-  // Function to encrypt plaintext using ChaCha20-Poly1305
-  function encrypt(plaintext: string, key: Uint8Array, nonce: Uint8Array): Uint8Array {
-    const encodedPlaintext = Buffer.from(plaintext, 'utf8');
-    const ciphertext = nacl.secretbox(encodedPlaintext, nonce, key);
-    return ciphertext;
-  }
-
-  // Function to decrypt ciphertext using ChaCha20-Poly1305
-  function decrypt(ciphertext: Uint8Array, key: Uint8Array, nonce: Uint8Array): string | null {
-    try {
-      const decrypted = nacl.secretbox.open(ciphertext, nonce, key);
-      if (!decrypted) {
-        throw new Error('Failed to decrypt ciphertext');
-      }
-      return Buffer.from(decrypted).toString('utf8');
-    } catch (error) {
-      console.error('Decryption error:', error);
-      return null;
-    }
-  }
-
-  function decryptFromString(ciphertextString: string, key: Uint8Array, nonce: Uint8Array): string | null {
-    // Convert the base64-encoded ciphertext string back to a Uint8Array
-    const ciphertext = Buffer.from(ciphertextString, 'base64');
-
-    try {
-      const decrypted = nacl.secretbox.open(ciphertext, nonce, key);
-      if (!decrypted) {
-        throw new Error('Failed to decrypt ciphertext');
-      }
-      return Buffer.from(decrypted).toString('utf8');
-    } catch (error) {
-      console.error('Decryption error:', error);
-      return null;
-    }
-  }
-
-
+// Decoding metadata 
   const decodeId = (seed: string): number => {
     const seedChars = seed.split("");
     const a = 1103515245;
@@ -270,7 +248,7 @@ const App = () => {
     if (format % 2 === 0)
       return "JPEG"
     else if (format % 3 === 0)
-      return "AVIG";
+      return "AVIF";
     else
       return "PNNG";
   };
@@ -320,32 +298,130 @@ const App = () => {
     return details;
   };
 
+  // 24-1003945597
   const decodeMetaData = (parsedMetaData: string, timestamp: number): DecodedMetaData => {
     const MetaData = padMetaData(parsedMetaData);
-    // const MetaData = (parsedMetaData);
+
+    const key = new Uint32Array([0x18, 0xF3, 0x7A, 0x2E, 0x5B, 0x91, 0xE4, 0x6C, 0x33, 0x80, 0x09, 0xD7, 0x56, 0xC8, 0xA5, 0x4F]);
+    let nonce = new Uint8Array(12);
+    nonce = crypto.getRandomValues(nonce);
+
+
+    const startTime = performance.now();
+
+    const DecryptedMetaData = decryptWithChaCha20(MetaData, key, nonce);
+    console.log("plaintext:", MetaData);
+    console.log("Decrypted plaintext:", DecryptedMetaData);
+
+    const endTime = performance.now();
+    console.log(`Call to decryptWithChaCha20 took ${endTime - startTime} milliseconds`);
+
 
     const decodedData = {
       timestamp: (timestamp + 1),
-      transactionId: decodeTransactionId(MetaData),
-      droneId: decodeDroneId(MetaData),
-      transactionType: decodeTransactionType(MetaData),
-      dataCategory: decodeDataCategory(MetaData),
-      dataFormat: decodeDataFormat(MetaData),
-      dataSize: decodeDataSize(MetaData),
-      sender: decodeSender(MetaData),
-      receiver: decodeReceiver(MetaData),
-      location: decodeLocation(MetaData),
-      additionalInfo: decodeAdditionalInfo(MetaData),
+      transactionId: decodeTransactionId(DecryptedMetaData),
+      droneId: decodeDroneId(DecryptedMetaData),
+      transactionType: decodeTransactionType(DecryptedMetaData),
+      dataCategory: decodeDataCategory(DecryptedMetaData),
+      dataFormat: decodeDataFormat(DecryptedMetaData),
+      dataSize: decodeDataSize(DecryptedMetaData),
+      sender: decodeSender(DecryptedMetaData),
+      receiver: decodeReceiver(DecryptedMetaData),
+      location: decodeLocation(DecryptedMetaData),
+      additionalInfo: decodeAdditionalInfo(DecryptedMetaData),
     };
 
     return decodedData;
   };
 
+  // Minimal ChaCha20-Poly1305 Decryption algorithm
+  const decryptWithChaCha20 = (
+    parsedMetaData: string,
+    key: Uint32Array,
+    nonce: Uint8Array
+  ): string => {
 
+
+    // Define the quarter round function
+    const quarterRound = (x: Uint32Array, a: number, b: number, c: number, d: number): void => {
+      x[a] = addMod32(x[a], x[b]);
+      x[d] = rotateLeft(x[d] ^ x[a], 16);
+      x[c] = addMod32(x[c], x[d]);
+      x[b] = rotateLeft(x[b] ^ x[c], 12);
+      x[a] = addMod32(x[a], x[b]);
+      x[d] = rotateLeft(x[d] ^ x[a], 8);
+      x[c] = addMod32(x[c], x[d]);
+      x[b] = rotateLeft(x[b] ^ x[c], 7);
+    };
+
+    // Define utility functions
+    const addMod32 = (a: number, b: number): number => {
+      return (a + b) >>> 0;
+    };
+
+    const rotateLeft = (x: number, n: number): number => {
+      return ((x << n) | (x >>> (32 - n))) >>> 0;
+    };
+
+    // Initialize the counter
+    let counter = 0;
+    let combinedData = '';
+    let result = '';
+
+    // Perform 20 rounds of bit operations
+    for (let round = 0; round < 20; round++) {
+
+      // Clone the key array for each round
+      const keyClone = key.slice();
+
+      // Apply quarter round function to each column
+      quarterRound(keyClone, 0, 4, 8, 12);
+      quarterRound(keyClone, 1, 5, 9, 13);
+      quarterRound(keyClone, 2, 6, 10, 14);
+      quarterRound(keyClone, 3, 7, 11, 15);
+      quarterRound(keyClone, 0, 5, 10, 15);
+      quarterRound(keyClone, 1, 6, 11, 12);
+      quarterRound(keyClone, 2, 7, 8, 13);
+      quarterRound(keyClone, 3, 4, 9, 14);
+
+
+      // Combine the key, nonce, and counter
+      combinedData = keyClone.join('') + nonce.join('') + counter.toString();
+
+      // Apply some bitwise operations on the combined data
+      // (Replace this with actual bitwise operations as per the ChaCha20 algorithm)
+      result = combinedData
+        .split('')
+        .map((char, index) => char.charCodeAt(0) ^ index)
+        .join('');
+
+      // Update the counter
+      counter++;
+
+      // XOR the result with the ciphertext
+    }
+    parsedMetaData = xorStrings(parsedMetaData, result);
+
+    // Return the plaintext
+    return parsedMetaData;
+  };
+
+  // Function to perform XOR operation on two strings
+  const xorStrings = (str1: string, str2: string): string => {
+    let result = '';
+    for (let i = 0; i < str1.length; i++) {
+      const charCode1 = str1.charCodeAt(i);
+      const charCode2 = str2.charCodeAt(i % str2.length);
+      const xorResult = charCode1 ^ charCode2;
+      result += String.fromCharCode(xorResult);
+    }
+    return result;
+  };
 
 
   useEffect(() => {
     setup();
+    // Run the js / components code after first html render
   }, []);
 
   useEffect(() => {
@@ -363,10 +439,10 @@ const App = () => {
         let parsedMetaData = metaData.toUpperCase() as Period;
 
         // setPeriod(parsedMetaData);
-
-        const secretKey = generateSecretKey();
-        const nonce = generateNonce();
-        parsedMetaData = decryptFromString(parsedMetaData, secretKey, nonce);
+        // console.log("parsedMetaData : ", parsedMetaData);
+        // const secretKey = generateSecretKey();
+        // const nonce = generateNonce();
+        // parsedMetaData = decryptFromString(parsedMetaData, secretKey, nonce);
 
         const decodedData = decodeMetaData(parsedMetaData, Number(timestamp));
         setDataList((prevDataList) => [...prevDataList, decodedData]);
@@ -382,10 +458,7 @@ const App = () => {
   // let location: Number[] = [
   //   72.943, 24.2621
   // ]
-  function handleDataClick(index: number): void {
-    setSelectedDataIndex(index);
 
-  }
 
   const handleDownloadClick = () => {
     if (selectedDataIndex !== null) {
@@ -419,8 +492,17 @@ const App = () => {
   //   );
   // }, [api, selectedAccount])
 
+  // console.log("cookieAccount : ", cookieAccount);
+  let cookieAccount = Cookies.get('wallet');
+  let cookieObject = null;
+
+  if (cookieAccount != undefined)
+    cookieObject = JSON.parse(decodeURIComponent(cookieAccount));
+
+  // console.log("cookieObject : ", cookieObject);
+
   return (
-    <div>
+    <div className='w-[100vw]' >
       <nav className="bg-black border-gray-200 dark:bg-gray-900 sticky">
         <div className="w-full flex flex-wrap items-center justify-between p-4">
           <a href="#" className="flex items-center space-x-4 rtl:space-x-reverse">
@@ -445,8 +527,12 @@ const App = () => {
           </div> */}
 
             {
-              accounts.length === 0 ? <div className='' >
-                <button onClick={handleConnect} id="dropdownDefaultButton" type="button" className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
+              accounts.length == 0 && cookieObject == undefined ? <div className='' >
+                <button
+                  onClick={handleConnect}
+                  id="dropdownDefaultButton"
+                  type="button"
+                  className="text-white bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800">
                   Connect Wallet
                   <svg className="w-2.5 h-2.5 ms-3" aria-hidden="true" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 10 6">
                     <path stroke="currentColor" strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="m1 1 4 4 4-4" />
@@ -458,7 +544,7 @@ const App = () => {
             }
 
             {
-              accounts.length > 0 && !selectedAccount ?
+              accounts.length > 0 && (cookieObject == undefined) ?
                 (
                   <div className='z-10 bg-white divide-y divide-gray-100 rounded-lg shadow  dark:bg-gray-700'>
                     <select className='py-2 text-sm text-gray-700 dark:text-gray-200 w-44 rounded-lg ' onChange={handleAccountSelection} >
@@ -471,35 +557,19 @@ const App = () => {
                 ) : null
             }
 
-            {selectedAccount ?
-              <div>
-                <button type="button" className="flex text-sm bg-gray-800 rounded-full md:me-0 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600" id="user-menu-button" aria-expanded="false" data-dropdown-toggle="user-dropdown" data-dropdown-placement="bottom">
-                  <span className="sr-only">Open user menu</span>
+            {selectedAccount || cookieObject != undefined ?
+              <div className="dropdown" >
+                <button
+                  onClick={handleDropDown}
+                  type="button"
+                  className="flex text-sm bg-gray-800 rounded-full md:me-0 focus:ring-4 focus:ring-gray-300 dark:focus:ring-gray-600"
+                >
                   <img className="w-8 h-8 rounded-full" src={profile} alt="user photo" />
                 </button>
-                <div className="z-50 hidden my-4 text-base list-none bg-black divide-y divide-gray-100 rounded-lg shadow dark:bg-gray-700 dark:divide-gray-600" id="user-dropdown">
-                  <div className="px-4 py-3">
-                    <span className="block text-sm text-white dark:text-white">{selectedAccount.meta.name}</span>
-                    <span className="block text-sm text-white truncate dark:text-gray-400 "> {selectedAccount.address} </span>
-                  </div>
-                  <ul className="py-2" aria-labelledby="user-menu-button">
-                    <li>
-                      <a href="#" className="block px-4 py-2 text-sm text-white hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">Dashboard</a>
-                    </li>
-                    <li>
-                      <a href="#" className="block px-4 py-2 text-sm text-white hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">Settings</a>
-                    </li>
-                    <li>
-                      <a href="#" className="block px-4 py-2 text-sm text-white hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">Earnings</a>
-                    </li>
-                    <li>
-                      <a href="#" className="block px-4 py-2 text-sm text-white hover:bg-gray-100 dark:hover:bg-gray-600 dark:text-gray-200 dark:hover:text-white">Sign out</a>
-                    </li>
-                  </ul>
-                </div>
-
               </div> : null
             }
+
+
 
             {/* Connect button testing */}
             {/* {
@@ -563,15 +633,16 @@ const App = () => {
               </svg>
             </button>
           </div>
-          <div className="items-center justify-between hidden w-full md:flex md:w-auto md:order-1" id="navbar-user">
-            <ul className="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-black dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
-              <li>
-                <a href="#" className="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 md:dark:text-blue-500" aria-current="page">Plan Mission</a>
-              </li>
-              <li>
-                <a href="#" className="block py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700">Attack</a>
-              </li>
-              {/* <li>
+          {cookieObject && (
+            <div className="items-center justify-between hidden w-full md:flex md:w-auto md:order-1" id="navbar-user">
+              <ul className="flex flex-col font-medium p-4 md:p-0 mt-4 border border-gray-100 rounded-lg bg-gray-50 md:space-x-8 rtl:space-x-reverse md:flex-row md:mt-0 md:border-0 md:bg-black dark:bg-gray-800 md:dark:bg-gray-900 dark:border-gray-700">
+                <li>
+                  <a href="#" className="block py-2 px-3 text-white bg-blue-700 rounded md:bg-transparent md:text-blue-700 md:p-0 md:dark:text-blue-500" aria-current="page">Reconnaissance</a>
+                </li>
+                <li>
+                  <a href="#" className="block py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700"> Analytics</a>
+                </li>
+                {/* <li>
                 <a href="#" className="block py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700">Services</a>
               </li>
               <li>
@@ -580,8 +651,9 @@ const App = () => {
               <li>
                 <a href="#" className="block py-2 px-3 text-white rounded hover:bg-gray-100 md:hover:bg-transparent md:hover:text-blue-700 md:p-0 dark:text-white md:dark:hover:text-blue-500 dark:hover:bg-gray-700 dark:hover:text-white md:dark:hover:bg-transparent dark:border-gray-700">Contact</a>
               </li> */}
-            </ul>
-          </div>
+              </ul>
+            </div>
+          )}
         </div>
       </nav>
 
@@ -616,9 +688,72 @@ const App = () => {
       </div> */}
 
 
-      {selectedAccount ?
+      {/* {selectedAccount || cookieAccount != "undefined" ? */}
+      {cookieAccount == undefined ? 
         <div className="flex flex-row">
-          <div className="flex h-[101vh] ">
+
+
+        </div> 
+
+      
+      : null 
+      }
+
+      {cookieAccount != undefined ?
+        <div className="flex flex-row">
+          <div className="flex h-[100vh] ">
+
+            <div id="dropdown"
+              className=
+              {`
+                    z-50 absolute right-0 group-hover:block my-1 text-base list-none bg-black divide-y divide-gray-100 rounded-lg shadow dark:bg-gray-700 dark:divide-gray-600 
+                    ${isOpen ? "" : "hidden"
+                }`}
+            >
+              {/* <div className="px-4 py-3">
+                <span className="block text-sm text-white dark:text-white">{cookieObject?.meta?.name || selectedAccount.meta.name}</span>
+                <span className="block text-sm text-gray-400 truncate ">     {cookieObject?.address || selectedAccount.address} </span>
+              </div> */}
+
+              {/* {selectedAccount && (
+                <div className="px-4 py-3">
+                  <span className="block text-sm text-white dark:text-white">{selectedAccount.meta.name}</span>
+                  <span className="block text-sm text-gray-400 truncate ">     {selectedAccount.address} </span>
+                </div>
+              )}
+
+              {cookieObject && (
+                <div className="px-4 py-3">
+                  <span className="block text-sm text-white dark:text-white">{cookieObject?.meta?.name}</span>
+                  <span className="block text-sm text-gray-400 truncate ">     {cookieObject?.address} </span>
+                </div>
+              )} */}
+
+
+              {/* {selectedAccount ? (
+                <div className="px-4 py-3">
+                  <span className="block text-sm text-white dark:text-white">{selectedAccount.meta.name}</span>
+                  <span className="block text-sm text-gray-400 truncate ">     {selectedAccount.address} </span>
+                </div>
+              ) : null} */}
+
+              {cookieObject ? (
+                <div className="px-4 py-3">
+                  <span className="block text-sm text-white dark:text-white">{cookieObject?.meta?.name}</span>
+                  <span className="block text-sm text-gray-400 truncate ">     {cookieObject?.address} </span>
+                </div>
+              ) : null}
+
+
+              <ul className="py-2" >
+                <li>
+                  <a href="#" onClick={() => {
+                    Cookies.remove("wallet");
+                    window.location.reload();
+                  }} className="block px-4 py-2 text-sm text-white hover:bg-gray-100 hover:text-black ">Sign out Transaction</a>
+                </li>
+              </ul>
+            </div>
             <div className='flex flex-col bg-[#201F2D] p-3 gap-3 w-[25vw]' >
 
               {/* <input type='text' className="search bg-[#302D38] rounded-2xl h-[7vh] text-white  " placeholder='Enter Drone Id' /> */}
@@ -639,8 +774,16 @@ const App = () => {
                       }`}
                   >
                     <div className="head flex gap-6 items-center truncate text-white" onClick={() => handleDataClick(index)}>
-                      <img src={drone} className='w-[45px] h-[45px]' alt="drone" />
-
+                      {/* <img src={vehicleImageSrc} className='w-[45px] h-[45px]' alt="drone" /> */}
+                      {data.droneId.charAt(Math.floor(data.droneId.length / 2)).match(/[a-z]/) && (
+                        <img src={drone} className='w-[45px] h-[45px]' alt="drone" />
+                      )}
+                      {data.droneId.charAt(Math.floor(data.droneId.length / 2)).match(/[5-9]/) && (
+                        <img src={flight} className='w-[45px] h-[45px]' alt="flight" />
+                      )}
+                      {data.droneId.charAt(Math.floor(data.droneId.length / 2)).match(/[0-4]/) && (
+                        <img src={jet} className='w-[45px] h-[45px]' alt="jet" />
+                      )}
                       <p className='w-[135px] truncate' >{data.droneId}</p>
                     </div>
 
@@ -662,9 +805,9 @@ const App = () => {
 
             {selectedDataIndex !== null && (
 
-              <div className='info flex flex-col p-3 gap-2 bg-[#201F2D] text-white w-[20vw] transform transition-all duration-1000 ease-out  ' key={selectedDataIndex}>
+              <div className='info flex flex-col p-3 gap-1 bg-[#201F2D] text-white w-[20vw] transform transition-all duration-1000 ease-out  ' key={selectedDataIndex}>
 
-                <div className="id bg-[#302D38] rounded-2xl h-[7vh] flex justify-between p-2.5">
+                <div className="id bg-[#302D38] rounded-2xl h-[7vh] items-center flex justify-between p-2.5">
 
                   <div className='flex gap-4 items-center truncate' >
                     <i className="fa-solid fa-angle-right"></i>
@@ -676,7 +819,7 @@ const App = () => {
 
 
 
-                <div className="location bg-[#302D38] rounded-2xl h-[30vh] flex flex-col gap-4 p-5 ">
+                <div className="location bg-[#302D38] rounded-2xl h-[30vh] flex flex-col gap-4 p-4 ">
 
                   <div className="area flex gap-5 items-center">
                     <i className="fa-solid fa-location-dot"></i>
@@ -700,7 +843,7 @@ const App = () => {
 
 
 
-                <div className="metaData bg-[#302D38] rounded-2xl h-[60vh] flex flex-col gap-4 p-5 ">
+                <div className="metaData bg-[#302D38] rounded-2xl h-[60vh] flex flex-col gap-3 p-4 ">
 
                   <div className="flex flex-col gap-2">
                     <h1>Transaction meta data</h1>
@@ -725,11 +868,11 @@ const App = () => {
 
                   </div>
 
-                  <div className="flex flex-col gap-2">
+                  <div className="flex flex-col">
                     <h1>Sensor data</h1>
                     <div className="flex justify-between">
-                      <TextBox1 head="sm" heading="Modality" subheading={`${dataList[selectedDataIndex].additionalInfo.temperature}  `} />
-                      <TextBox1 head="sm" heading="Data format" subheading={`${dataList[selectedDataIndex].additionalInfo.humidity} `} />
+                      <TextBox1 head="sm" heading="Temperature" subheading={`${dataList[selectedDataIndex].additionalInfo.temperature}  `} />
+                      <TextBox1 head="sm" heading="Humidity" subheading={`${dataList[selectedDataIndex].additionalInfo.humidity} `} />
                     </div>
                   </div>
 
@@ -741,11 +884,17 @@ const App = () => {
 
           </div>
 
-          <div className={`w-${selectedDataIndex !== null ? ['50%'] : ['65%']}`}>
-            {/* <Map
+
+
+
+
+          <div className={`${selectedDataIndex !== null ? ['w-[55vw]'] : ['w-[75vw]']} overflow-hidden`}>
+
+            <Map
               latitude={selectedDataIndex !== null ? dataList[selectedDataIndex].location.latitude : 7.2905715}
               longitude={selectedDataIndex !== null ? dataList[selectedDataIndex].location.longitude : 80.6337262}
-            /> */}
+              style={{ width: '100%', height: '100%' }}
+            />
           </div>
 
         </div> : null
@@ -803,3 +952,69 @@ const App = () => {
 export default App
 
 
+
+  // const handleBurn = async () => {
+  //   if (!api || !selectedAccount)
+  //     return;
+
+  //   const injector = await web3FromAddress(selectedAccount.address);
+
+  //   const response = await api.tx.currencies.burnFren(AMOUNT).signAndSend(selectedAccount.address, {
+  //     signer: injector.signer
+  //   });
+
+  //   if (response)
+  //     console.log("Burn response : ", response);
+  //   else
+  //     console.log("No Frens burnt ");
+
+  // }
+
+
+  // Encryption - Decryption 
+  // Function to generate a random 32-byte secret key
+  // function generateSecretKey(): Uint8Array {
+  //   return nacl.randomBytes(nacl.secretbox.keyLength);
+  // }
+
+  // // Function to generate a random 12-byte nonce
+  // function generateNonce(): Uint8Array {
+  //   return nacl.randomBytes(nacl.secretbox.nonceLength);
+  // }
+
+  // Function to encrypt plaintext using ChaCha20-Poly1305
+  // function encrypt(plaintext: string, key: Uint8Array, nonce: Uint8Array): Uint8Array {
+  //   const encodedPlaintext = Buffer.from(plaintext, 'utf8');
+  //   const ciphertext = nacl.secretbox(encodedPlaintext, nonce, key);
+  //   return ciphertext;
+  // }
+
+  // // Function to decrypt ciphertext using ChaCha20-Poly1305
+  // function decrypt(ciphertext: Uint8Array, key: Uint8Array, nonce: Uint8Array): string | null {
+  //   try {
+  //     const decrypted = nacl.secretbox.open(ciphertext, nonce, key);
+  //     if (!decrypted) {
+  //       throw new Error('Failed to decrypt ciphertext');
+  //     }
+  //     return Buffer.from(decrypted).toString('utf8');
+  //   } catch (error) {
+  //     console.error('Decryption error:', error);
+  //     return null;
+  //   }
+  // }
+
+  // function decryptFromString(ciphertextString: string, key: Uint8Array, nonce: Uint8Array): string | null {
+  //   // Convert the base64-encoded ciphertext string back to a Uint8Array
+  //   const ciphertext = Buffer.from(ciphertextString, 'base64');
+
+  //   try {
+  //     const decrypted = nacl.secretbox.open(ciphertext, nonce, key);
+  //     if (!decrypted) {
+  //       throw new Error('Failed to decrypt ciphertext');
+  //     }
+  //     return Buffer.from(decrypted).toString('utf8');
+  //   } catch (error) {
+  //     console.error('Decryption error:', error);
+  //     return null;
+  //   }
+  // }
