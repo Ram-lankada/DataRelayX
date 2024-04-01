@@ -11,11 +11,13 @@ import BN from 'bn.js';
 
 import profile from '../../static/profile.png';
 import logo from '../../static/logo.png';
+import bigLogo from '../../static/bigLogo.png';
 import drone from '../../static/drone.png';
 import flight from '../../static/flight.png';
 import jet from '../../static/jet.png';
 import download from '../../static/download.png';
 import view from '../../static/view.png';
+import gradient from '../../static/gradient.png';
 
 import Map from '../../Components/map.jsx';
 import TextBox1 from '../../Components/Textbox/tb1.tsx';
@@ -687,17 +689,73 @@ const App = () => {
 
       </div> */}
 
-
+      {/* UTILITY FIRST LIBRARY  */}
       {/* {selectedAccount || cookieAccount != "undefined" ? */}
       {cookieAccount == undefined ? 
-        <div className="flex flex-row">
+        <div className="flex flex-row bg-[#1A1B1E] h-[90vh]">
 
+          <div className="context text-white w-[50vw] flex flex-col p-24 gap-7">
+            
+            <div className="heading">
+              
+              <p className="text-4xl">
+              About Data Relay X
+              </p>
+            </div>
+
+            <div className="subheading">
+
+              <p className="text-base">
+              The Data Relay X application stands at the forefront of modern reconnaissance technology, offering unparalleled capabilities in gathering, processing, and disseminating critical information from swarm troops. As a decentralized platform built for military intelligence operations, Data Relay X leverages cutting-edge technologies to empower commanders with real-time insights into aerial swarm troop activities. 
+              </p>
+              <br />
+              <p>
+                By harnessing the power of peer-to-peer communications and blockchain technology, this innovative tool
+                ensures the seamless exchange of metadata between unmanned aerial vehicles (UAVs) and ground stations,
+                  facilitating enhanced situational awareness and decision-making on the battlefield.              
+              </p>
+            </div>
+
+            <div className="button">
+
+              <a href="https://maroon-profit-6d5.notion.site/Data-Relay-X-8d52476369104499a5086ef1ebcfe84a" target='_blank' >
+                <div 
+                  className="text-white cursor-pointer bg-blue-700 hover:bg-blue-800 focus:ring-4 focus:outline-none focus:ring-blue-300 font-medium rounded-lg text-sm px-5 py-2.5 text-center inline-flex items-center dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                  >
+                Read the docs
+                </div>
+              </a>
+
+            </div>
+          </div>
+
+          <div className="image text-white w-[50vw] relative content-center">
+ 
+
+          <div className='logo w-[25vw] mx-44 ' style={{ backgroundImage: `url(${gradient})` }}>
+            <img className='w-[25vw]' src={bigLogo} alt="" />
+          </div> 
+          {/* <div className='logo w-[25vw] mx-44 '>
+            <img className='w-[25vw]' src={gradient} alt="" />
+          </div> */}
+
+                       
+          </div>
 
         </div> 
 
       
       : null 
       }
+
+
+      {/* { cookieAccount == undefined ? 
+      
+        <div>
+
+        </div>
+        : null 
+    } */}
 
       {cookieAccount != undefined ?
         <div className="flex flex-row">
