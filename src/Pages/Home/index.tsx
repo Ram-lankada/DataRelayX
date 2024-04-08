@@ -69,7 +69,7 @@ const App = () => {
   const [selectedAccount, setSelectedAccount] = useState<InjectedAccountWithMeta>();
   const [dataList, setDataList] = useState<DecodedMetaData[]>([]);
   const [period, setPeriod] = useState<Period>();
-  const [selectedDataIndex, setSelectedDataIndex] = useState(null);
+  const [selectedDataIndex, setSelectedDataIndex] = useState<number | null>(null); 
   const [searchQuery, setSearchQuery] = useState<string>('');
   const [isOpen, setOpen] = useState(false);
 
@@ -495,11 +495,12 @@ const App = () => {
   // }, [api, selectedAccount])
 
   // console.log("cookieAccount : ", cookieAccount);
-  let cookieAccount = Cookies.get('wallet');
-  let cookieObject = null;
+let cookieAccount = Cookies.get('wallet');
+let cookieObject: { meta?: { name: string }, address?: string } | null = null;
 
-  if (cookieAccount != undefined)
-    cookieObject = JSON.parse(decodeURIComponent(cookieAccount));
+if (cookieAccount !== undefined)
+  cookieObject = JSON.parse(decodeURIComponent(cookieAccount));
+
 
   // console.log("cookieObject : ", cookieObject);
 

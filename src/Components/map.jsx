@@ -1,6 +1,8 @@
 import React from 'react';
 import { GoogleMap, useLoadScript, Marker } from '@react-google-maps/api';
+import dotenv from 'dotenv';
 
+dotenv.config();
 // const libraries = ['places'];
 const mapContainerStyle = {
   width: '100vw',
@@ -13,7 +15,7 @@ const center = {
 
 const Map = ( {latitude , longitude} ) => {
   const { isLoaded, loadError } = useLoadScript({
-    googleMapsApiKey: 'AIzaSyCmIZu7u2rel8TWvhsy2beZhkeHQSIjqhc',
+    googleMapsApiKey: process.env.MAP_KEY,
     // libraries,
   });
 
